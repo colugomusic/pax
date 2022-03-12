@@ -68,7 +68,7 @@ public:
         // This task will be run in some other thread so I do a mixture of
         // Godot/boost::signals2 nonsense here to defer the operation until the
         // next GUI frame
-        CONN_.deferred.queued_request = Deferred::i().parallel().push([this, settings]()
+        Deferred::i().parallel().push([this, settings]()
         {
           request_stream(settings);
         });
