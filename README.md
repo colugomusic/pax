@@ -65,9 +65,8 @@ public:
       // the stream finishes
       stream_.push_finished_task([this, settings]()
       {
-        // This task will be run in some other thread so I do a mixture of
-        // Godot/boost::signals2 nonsense here to defer the operation until the
-        // next GUI frame
+        // This task will be run in some other thread so I do some Godot nonsense
+        // here to defer the operation until the next GUI frame
         Deferred::i().parallel().push([this, settings]()
         {
           request_stream(settings);
