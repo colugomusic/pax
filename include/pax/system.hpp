@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 #include "device.hpp"
@@ -35,14 +37,24 @@ public:
 
 	System();
 
-	auto get_default_host() const -> Host;
-	auto get_default_input_device() const -> Device;
-	auto get_default_output_device() const -> Device;
-	auto get_default_input_device(Host host) const -> Device;
-	auto get_default_output_device(Host host) const -> Device;
-	auto get_device(PaDeviceIndex index) const -> Device;
+	auto get_default_host() const -> std::optional<Host>;
+	auto get_default_input_device() const -> std::optional<Device>;
+	auto get_default_output_device() const -> std::optional<Device>;
+	auto get_default_input_device(Host host) const -> std::optional<Device>;
+	auto get_default_output_device(Host host) const -> std::optional<Device>;
+	auto get_device(PaDeviceIndex index) const -> std::optional<Device>;
+	auto get_device(const std::string& name) const -> std::optional<Device>;
 	auto get_host(Device device) const -> Host;
-	auto get_host(PaHostApiIndex index) const -> Host;
+	auto get_host(PaHostApiIndex index) const -> std::optional<Host>;
+	auto get_host(const std::string& name) const -> std::optional<Host>;
+
+private:
+
+	using NameToDeviceMap = std::unordered_map<std::string, PaDeviceIndex>;
+	using NameToHostMap = std::unordered_map<std::string, PaHostApiIndex>;
+
+	NameToDeviceMap name_to_device_;
+	NameToHostMap name_to_host_;
 };
 
 namespace detail {
@@ -175,52 +187,74 @@ inline System::System()
 {
 }
 
-inline auto System::get_default_host() const -> Host
+inline auto System::get_default_host() const -> std::optional<Host>
 {
 	return get_host(default_host);
 }
 
-inline auto System::get_default_input_device() const -> Device
+inline auto System::get_default_input_device() const -> std::optional<Device>
 {
 	return get_device(default_input_device);
 }
 
-inline auto System::get_default_output_device() const -> Device
+inline auto System::get_default_output_device() const -> std::optional<Device>
 {
 	return get_device(default_output_device);
 }
 
-inline auto System::get_default_input_device(Host host) const -> Device
+inline auto System::get_default_input_device(Host host) const -> std::optional<Device>
 {
 	return get_device(host.info.defaultInputDevice);
 }
 
-inline auto System::get_default_output_device(Host host) const -> Device
+inline auto System::get_default_output_device(Host host) const -> std::optional<Device>
 {
 	return get_device(host.info.defaultOutputDevice);
 }
 
-inline auto System::get_device(PaDeviceIndex index) const -> Device
+inline auto System::get_device(PaDeviceIndex index) const -> std::optional<Device>
 {
 	const auto pos { devices.find(index) };
 
-	assert(pos != devices.end());
+	if (pos == devices.end()) return std::nullopt;
 
 	return pos->second;
+}
+
+inline auto System::get_device(const std::string& name) const -> std::optional<Device>
+{
+	const auto pos { name_to_device_.find(name) };
+
+	if (pos == name_to_device_.end()) return std::nullopt;
+
+	return get_device(pos->second);
 }
 
 inline auto System::get_host(Device device) const -> Host
 {
-	return get_host(device.info.hostApi);
+	const auto out { get_host(device.info.hostApi) };
+
+	assert(out);
+
+	return *out;
 }
 
-inline auto System::get_host(PaHostApiIndex index) const -> Host
+inline auto System::get_host(PaHostApiIndex index) const -> std::optional<Host>
 {
 	const auto pos { hosts.find(index) };
 
-	assert(pos != hosts.end());
+	if (pos == hosts.end()) return std::nullopt;
 
 	return pos->second;
+}
+
+inline auto System::get_host(const std::string& name) const -> std::optional<Host>
+{
+	const auto pos { name_to_host_.find(name) };
+
+	if (pos == name_to_host_.end()) return std::nullopt;
+
+	return get_host(pos->second);
 }
 
 } // pax

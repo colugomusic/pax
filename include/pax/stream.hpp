@@ -57,7 +57,7 @@ public:
 	auto get_time() const -> double;
 	auto is_active() const -> bool;
 	auto push_finished_task(StreamFinishedTask task) -> void;
-	auto request(Request && settings) -> void;
+	auto request(Request settings) -> void;
 	auto set_callback(PaStreamCallback* callback, void* user_data) -> void;
 	auto stop() -> void;
 
@@ -87,7 +87,6 @@ private:
 	std::unique_ptr<portaudio::Stream> stream_;
 	std::optional<StreamInfo> requested_info_;
 	std::optional<StreamInfo> active_info_;
-	std::optional<Request> queued_request_;
 	std::string last_error_;
 	std::vector<StreamFinishedTask> finished_tasks_;
 	PaStreamCallback* callback_ {};
@@ -104,6 +103,7 @@ inline auto Stream::abort() -> void
 	if (!stream_) return;
 
 	stream_->abort();
+	active_info_.reset();
 }
 
 inline auto Stream::get_cpu_load() const -> double
@@ -153,15 +153,14 @@ inline auto Stream::raise_error(std::string error) -> void
 	config_.callbacks.error(error);
 }
 
-inline auto Stream::request(Request && settings) -> void
+inline auto Stream::push_finished_task(StreamFinishedTask task) -> void
 {
-	// If stream is running, close it and queue this request
-	if (stream_ && stream_->is_active())
-	{
-		queued_request_.emplace(std::move(settings));
-		stream_->stop();
-		return;
-	}
+	finished_tasks_.push_back(task);
+}
+
+inline auto Stream::request(Request settings) -> void
+{
+	if (is_active()) return;
 
 	stream_.reset();
 
@@ -271,6 +270,12 @@ inline auto Stream::start() -> void
 	config_.callbacks.started();
 }
 
+inline auto Stream::set_callback(PaStreamCallback* callback, void* user_data) -> void
+{
+	callback_ = callback;
+	user_data_ = user_data;
+}
+
 inline auto Stream::stop() -> void
 {
 	if (!stream_) return;
@@ -286,16 +291,8 @@ inline auto Stream::on_finished() -> void
 	}
 
 	finished_tasks_.clear();
+	active_info_.reset();
 	config_.callbacks.stopped();
-
-	if (queued_request_)
-	{
-		auto settings { *queued_request_ };
-
-		queued_request_.reset();
-
-		request(std::move(settings));
-	}
 }
 
 inline auto Stream::_on_finished(void* user_data) -> void
