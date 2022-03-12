@@ -12,9 +12,9 @@ public:
 
 	struct Info
 	{
-		PaTime inputLatency;
-		PaTime outputLatency;
-		double sampleRate;
+		PaTime input_latency;
+		PaTime output_latency;
+		double sample_rate;
 	};
 
 	struct Config
@@ -23,19 +23,19 @@ public:
 		const PaStreamParameters* output_parameters;
 		double sample_rate;
 		unsigned long frames_per_buffer;
-		PaStreamFlags stream_flags;
-		PaStreamCallback* stream_callback;
+		PaStreamFlags flags;
+		PaStreamCallback* callback;
 		void* user_data;
 	};
 
-	const PaStream* const stream;
+	PaStream* const stream;
 	const PaHostApiTypeId host_type;
 	const Info info;
 
 	Stream(const Config& config);
-
 	~Stream();
 
+	auto abort() -> void;
 	auto start() -> void;
 	auto stop() -> void;
 	auto is_active() const -> bool;
@@ -50,22 +50,50 @@ namespace detail
 
 static inline auto open_stream(const Stream::Config& config)
 {
+	// Tries to open the stream in a loop
+	// Works around shitty ASIO driver bugs
+	const auto HACK_brute_force_open_stream = [&](PaStream** stream, const Stream::Config& config)
+	{
+		constexpr auto MAX_ATTEMPTS { 3 };
+
+		PaError err { paNoError };
+
+		for (int i = 0; i < MAX_ATTEMPTS; i++)
+		{
+			err =
+				Pa_OpenStream(
+					stream,
+					config.input_parameters,
+					config.output_parameters,
+					config.sample_rate,
+					config.frames_per_buffer,
+					config.flags,
+					config.callback,
+					config.user_data);
+			
+			if (err == paNoError) return err;
+		}
+
+		return err;
+	};
+
 	PaStream* out;
 
-	Library::C::OpenStream(
-		&stream,
-		config.input_parameters,
-		config.output_parameters,
-		config.sample_rate,
-		config.frames_per_buffer,
-		config.stream_flags,
-		config.stream_callback,
-		config.user_data);
+	const auto err { HACK_brute_force_open_stream(&out, config) };
+
+	if (err != paNoError)
+	{
+		std::stringstream ss;
+
+		ss << "Failed to open audio stream: " << Pa_GetErrorText(err);
+
+		throw std::runtime_error(ss.str());
+	}
 
 	return out;
 }
 
-static inline auto get_info(const PaStream* stream)
+static inline auto get_info(PaStream* stream)
 {
 	Stream::Info out;
 
@@ -100,6 +128,14 @@ inline Stream::~Stream()
 	Library::C::CloseStream(stream);
 }
 
+inline auto Stream::abort() -> void
+{
+	if (is_active())
+	{
+		Library::C::AbortStream(stream);
+	}
+}
+
 inline auto Stream::start() -> void
 {
 	Library::C::StartStream(stream);
@@ -115,7 +151,7 @@ inline auto Stream::stop() -> void
 
 inline auto Stream::is_active() const -> bool
 {
-	return Library::C::IsStreamActive(stream);
+	return Library::C::IsStreamActive(stream) == 1;
 }
 
 inline auto Stream::set_finished_callback(PaStreamFinishedCallback* streamFinishedCallback) -> void
