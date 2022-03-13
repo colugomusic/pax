@@ -50,8 +50,11 @@ public:
 
 private:
 
-	using NameToDeviceMap = std::unordered_map<std::string, PaDeviceIndex>;
-	using NameToHostMap = std::unordered_map<std::string, PaHostApiIndex>;
+	using NameToDeviceMap = std::unordered_map<std::string_view, PaDeviceIndex>;
+	using NameToHostMap = std::unordered_map<std::string_view, PaHostApiIndex>;
+
+	static auto map_names_to_devices(const Devices& devices) -> NameToDeviceMap;
+	static auto map_names_to_hosts(const Hosts& hosts) -> NameToHostMap;
 
 	NameToDeviceMap name_to_device_;
 	NameToHostMap name_to_host_;
@@ -184,7 +187,33 @@ inline System::System()
 	, default_host { detail::find_default_host(hosts) }
 	, default_input_device { detail::find_default_input_device(input_devices) }
 	, default_output_device { detail::find_default_output_device(output_devices) }
+	, name_to_device_ { map_names_to_devices(devices) }
+	, name_to_host_ { map_names_to_hosts(hosts) }
 {
+}
+
+inline auto System::map_names_to_devices(const Devices& devices) -> NameToDeviceMap
+{
+	NameToDeviceMap out;
+
+	for (auto& [index, device] : devices)
+	{
+		out[device.name] = index;
+	}
+
+	return out;
+}
+
+inline auto System::map_names_to_hosts(const Hosts& hosts) -> NameToHostMap
+{
+	NameToHostMap out;
+
+	for (auto& [index, host] : hosts)
+	{
+		out[host.name] = index;
+	}
+
+	return out;
 }
 
 inline auto System::get_default_host() const -> std::optional<Host>
