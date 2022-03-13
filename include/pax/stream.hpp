@@ -50,11 +50,11 @@ public:
 
 	auto abort() -> void;
 	auto get_cpu_load() const -> double;
-	auto get_current_input_device() const -> std::optional<Device>;
 	auto get_host_type() const -> PaHostApiTypeId;
-	auto get_num_input_channels() const -> int;
-	auto get_SR() const -> int;
+	auto get_info() const -> std::optional<StreamInfo>;
+	auto get_input_channel_count() const -> int;
 	auto get_time() const -> double;
+	auto get_SR() const -> int;
 	auto is_active() const -> bool;
 	auto push_finished_task(StreamFinishedTask task) -> void;
 	auto request(Request settings) -> void;
@@ -86,7 +86,6 @@ private:
 	Config config_;
 	std::unique_ptr<portaudio::Stream> stream_;
 	std::optional<StreamInfo> requested_info_;
-	std::optional<StreamInfo> active_info_;
 	std::string last_error_;
 	std::vector<StreamFinishedTask> finished_tasks_;
 	PaStreamCallback* callback_ {};
@@ -103,7 +102,6 @@ inline auto Stream::abort() -> void
 	if (!stream_) return;
 
 	stream_->abort();
-	active_info_.reset();
 }
 
 inline auto Stream::get_cpu_load() const -> double
@@ -113,9 +111,19 @@ inline auto Stream::get_cpu_load() const -> double
 	return stream_->get_cpu_load();
 }
 
-inline auto Stream::get_current_input_device() const -> std::optional<Device>
+inline auto Stream::get_info() const -> std::optional<StreamInfo>
 {
-	return active_info_ ? active_info_->input_device : std::nullopt;
+	return requested_info_;
+}
+
+inline auto Stream::get_input_channel_count() const -> int
+{
+	return requested_info_ && requested_info_->input_params ? requested_info_->input_params->channelCount : 0;
+}
+
+inline auto Stream::get_SR() const -> int
+{
+	return requested_info_ ? requested_info_->SR : 0;
 }
 
 inline auto Stream::get_host_type() const -> PaHostApiTypeId 
@@ -123,16 +131,6 @@ inline auto Stream::get_host_type() const -> PaHostApiTypeId
 	if (!stream_) return PaHostApiTypeId(-1);
 
 	return stream_->host_type;
-}
-
-inline auto Stream::get_num_input_channels() const -> int
-{
-	return active_info_ && active_info_->input_params ? active_info_->input_params->channelCount : 0;
-}
-
-inline auto Stream::get_SR() const -> int
-{
-	return active_info_ ? int(active_info_->SR) : 0;
 }
 
 inline auto Stream::get_time() const -> double
@@ -266,7 +264,6 @@ inline auto Stream::start() -> void
 
 	config_.callbacks.starting();
 	stream_->start();
-	active_info_.emplace(*requested_info_);
 	config_.callbacks.started();
 }
 
@@ -291,7 +288,6 @@ inline auto Stream::on_finished() -> void
 	}
 
 	finished_tasks_.clear();
-	active_info_.reset();
 	config_.callbacks.stopped();
 }
 
