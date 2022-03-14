@@ -141,8 +141,18 @@ inline auto Stream::stop() -> void
 	{
 		if (host_type == paDirectSound)
 		{
-			// Can get stuck while waiting for the stream to stop due to an unknown Windows bug i guess
+			// Can get stuck while waiting for the stream to stop
+			// due to an unknown Windows or PortAudio bug i guess
 			// So just abort instead
+			Library::C::AbortStream(stream);
+			return;
+		}
+
+		if (host_type == paMME)
+		{
+			// Likewise MME will always get stuck if you try to stop
+			// cleanly AFAIK due to a PortAudio bug which I can't be
+			// bothered to report
 			Library::C::AbortStream(stream);
 			return;
 		}
