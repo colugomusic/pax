@@ -125,7 +125,7 @@ inline Stream::Stream(const Config& config)
 
 inline Stream::~Stream()
 {
-	Library::C::CloseStream(stream);
+	abort();
 }
 
 inline auto Stream::abort() -> void
