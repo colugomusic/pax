@@ -30,6 +30,8 @@ public:
 	const std::vector<PaDeviceIndex> input_devices;
 	const std::vector<PaDeviceIndex> output_devices;
 	const HostDevices host_devices;
+	const HostDevices host_input_devices;
+	const HostDevices host_output_devices;
 
 	const PaHostApiIndex default_host;
 	const PaDeviceIndex default_input_device;
@@ -140,6 +142,20 @@ static inline auto enumerate_host_devices(const System::Devices& devices) -> Sys
 	return out;
 }
 
+static inline auto filter_host_devices(const System::Devices& devices, const std::vector<PaDeviceIndex>& filter) -> System::HostDevices
+{
+	System::HostDevices out;
+
+	for (const auto& [index, device] : devices)
+	{
+		if (std::find(filter.begin(), filter.end(), index) == filter.end()) continue;
+
+		out[device.info.hostApi].push_back(index);
+	}
+
+	return out;
+}
+
 static inline auto find_default_host(const System::Hosts& hosts) -> PaHostApiIndex
 {
 	auto out { portaudio::Library::C::GetDefaultHostApi() };
@@ -184,6 +200,8 @@ inline System::System()
 	, input_devices { detail::enumerate_input_devices(devices) }
 	, output_devices { detail::enumerate_output_devices(devices) }
 	, host_devices { detail::enumerate_host_devices(devices) }
+	, host_input_devices { detail::filter_host_devices(devices, input_devices) }
+	, host_output_devices { detail::filter_host_devices(devices, output_devices) }
 	, default_host { detail::find_default_host(hosts) }
 	, default_input_device { detail::find_default_input_device(input_devices) }
 	, default_output_device { detail::find_default_output_device(output_devices) }
