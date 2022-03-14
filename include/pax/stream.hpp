@@ -16,6 +16,7 @@ public:
 	{
 		struct
 		{
+			std::function<void(std::string info)> info;
 			std::function<void(std::string error)> error;
 			std::function<void(int SR)> sample_rate_changed;
 			std::function<void()> started;
@@ -196,10 +197,14 @@ inline auto Stream::request(Request settings) -> void
 
 				if (check_supported == paFormatIsSupported)
 				{
-					// It worked, so save the sample rate
+					std::stringstream ss;
+
+					ss << "Tried sample rate " << settings.SR << " but it didn't work. Falling back to default (" << default_SR << " Hz) instead";
+
+					config_.callbacks.info(ss.str());
+
 					settings.SR = default_SR;
 
-					// And signal that the sample rate was changed
 					config_.callbacks.sample_rate_changed(settings.SR);
 				}
 			}
