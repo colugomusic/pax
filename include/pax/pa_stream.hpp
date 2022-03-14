@@ -145,6 +145,14 @@ inline auto Stream::stop() -> void
 {
 	if (is_active())
 	{
+		if (host_type == paDirectSound)
+		{
+			// Can get stuck while waiting for the stream to stop due to an unknown Windows bug i guess
+			// So just abort instead
+			Library::C::AbortStream(stream);
+			return;
+		}
+
 		Library::C::StopStream(stream);
 	}
 }
