@@ -103,6 +103,7 @@ inline auto Stream::abort() -> void
 	if (!stream_) return;
 
 	stream_->abort();
+	stream_.reset();
 }
 
 inline auto Stream::get_cpu_load() const -> double
@@ -294,6 +295,7 @@ inline auto Stream::on_finished() -> void
 
 	finished_tasks_.clear();
 	config_.callbacks.stopped();
+	stream_.reset();
 }
 
 inline auto Stream::_on_finished(void* user_data) -> void
