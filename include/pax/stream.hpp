@@ -54,6 +54,7 @@ public:
 	auto get_host_type() const -> PaHostApiTypeId;
 	auto get_info() const -> std::optional<StreamInfo>;
 	auto get_input_channel_count() const -> int;
+	auto get_output_latency() const -> double;
 	auto get_time() const -> double;
 	auto get_SR() const -> int;
 	auto is_active() const -> bool;
@@ -121,6 +122,11 @@ inline auto Stream::get_info() const -> std::optional<StreamInfo>
 inline auto Stream::get_input_channel_count() const -> int
 {
 	return requested_info_ && requested_info_->input_params ? requested_info_->input_params->channelCount : 0;
+}
+
+inline auto Stream::get_output_latency() const -> double
+{
+	return stream_->info.output_latency;
 }
 
 inline auto Stream::get_SR() const -> int
