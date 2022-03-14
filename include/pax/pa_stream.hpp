@@ -33,7 +33,6 @@ public:
 	const Info info;
 
 	Stream(const Config& config);
-	~Stream();
 
 	auto abort() -> void;
 	auto start() -> void;
@@ -121,11 +120,6 @@ inline Stream::Stream(const Config& config)
 	, host_type { detail::get_host_type(config) }
 	, info { detail::get_info(stream) }
 {
-}
-
-inline Stream::~Stream()
-{
-	abort();
 }
 
 inline auto Stream::abort() -> void
