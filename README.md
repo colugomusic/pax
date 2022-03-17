@@ -67,7 +67,7 @@ public:
       {
         // This task will be run in some other thread so I do some Godot nonsense
         // here to defer the operation until the next GUI frame
-        Deferred::i().parallel().push([this, settings]()
+        task_processor_.push([this, settings]()
         {
           request_stream(settings);
         });
