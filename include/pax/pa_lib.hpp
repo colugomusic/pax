@@ -46,12 +46,10 @@ public:
         static auto StopStream(PaStream* stream) -> void;
         static auto Terminate() -> void;
 
-#	ifdef _WIN32
 		struct WASAPI
 		{
 			static auto IsLoopback(PaDeviceIndex device) -> int;
 		};
-#	endif
     };
 
 private:
@@ -200,14 +198,14 @@ inline auto Library::C::GetStreamCpuLoad(PaStream* stream) -> double
 	return Pa_GetStreamCpuLoad(stream);
 }
 
-#ifdef _WIN32
-
 inline auto Library::C::WASAPI::IsLoopback(PaDeviceIndex device) -> int
 {
+#ifdef _WIN32
 	return PaWasapi_IsLoopback(device);
-}
-
+#else
+	return false;
 #endif
+}
 
 template <class T>
 inline auto Library::check_error(T result) -> T
