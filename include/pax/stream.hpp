@@ -249,7 +249,6 @@ inline auto Stream::start() -> void
 {
 	try
 	{
-		if (stream_) return;
 		if (!requested_info_) return;
 
 		const auto input_params { requested_info_->input_params ? &(*requested_info_->input_params) : nullptr };
@@ -265,6 +264,7 @@ inline auto Stream::start() -> void
 		config.sample_rate = requested_info_->SR;
 		config.user_data = this;
 
+		stream_.reset();
 		stream_ = std::make_unique<pax::portaudio::Stream>(config);
 		stream_->set_finished_callback(&Stream::_on_finished);
 	}
@@ -301,7 +301,6 @@ inline auto Stream::on_finished() -> void
 
 	finished_tasks_.clear();
 	config_.callbacks.stopped();
-	stream_.reset();
 }
 
 inline auto Stream::_on_finished(void* user_data) -> void
