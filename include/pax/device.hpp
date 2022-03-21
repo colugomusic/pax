@@ -64,7 +64,7 @@ inline auto Device::make_input_stream_parameters(double latency) const -> PaStre
 	out.device = index;
 	out.hostApiSpecificStreamInfo = NULL;
 	out.sampleFormat = paFloat32 | paNonInterleaved;
-	out.suggestedLatency = latency;
+	out.suggestedLatency = latency >= 0.0 ? latency : info.defaultLowInputLatency;
 
 	return out;
 }
@@ -77,7 +77,7 @@ inline auto Device::make_output_stream_parameters(double latency) const -> PaStr
 	out.device = index;
 	out.hostApiSpecificStreamInfo = NULL;
 	out.sampleFormat = paFloat32 | paNonInterleaved;
-	out.suggestedLatency = latency;
+	out.suggestedLatency = latency >= 0.0 ? latency : info.defaultLowOutputLatency;
 
 	return out;
 }
