@@ -23,9 +23,6 @@ public:
 	const std::string_view name;
 
 	Device(PaDeviceIndex device_index);
-
-	auto make_input_stream_parameters(double latency) const -> PaStreamParameters;
-	auto make_output_stream_parameters(double latency) const -> PaStreamParameters;
 };
 
 namespace detail {
@@ -54,32 +51,6 @@ inline Device::Device(PaDeviceIndex index_)
 	, is_wasapi_loopback { portaudio::Library::C::WASAPI::IsLoopback(index) == 1 }
 	, name { info.name }
 {
-}
-
-inline auto Device::make_input_stream_parameters(double latency) const -> PaStreamParameters
-{
-	PaStreamParameters out;
-
-	out.channelCount = info.maxInputChannels;
-	out.device = index;
-	out.hostApiSpecificStreamInfo = NULL;
-	out.sampleFormat = paFloat32 | paNonInterleaved;
-	out.suggestedLatency = latency >= 0.0 ? latency : info.defaultLowInputLatency;
-
-	return out;
-}
-
-inline auto Device::make_output_stream_parameters(double latency) const -> PaStreamParameters
-{
-	PaStreamParameters out;
-
-	out.channelCount = 2;
-	out.device = index;
-	out.hostApiSpecificStreamInfo = NULL;
-	out.sampleFormat = paFloat32 | paNonInterleaved;
-	out.suggestedLatency = latency >= 0.0 ? latency : info.defaultLowOutputLatency;
-
-	return out;
 }
 
 } // pax

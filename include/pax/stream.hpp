@@ -42,7 +42,6 @@ public:
 		Device output_device;
 		unsigned long frames_per_buffer;
 		int SR {};
-		double latency {};
 	};
 
 	using StreamFinishedTask = std::function<void()>;
@@ -172,14 +171,27 @@ inline auto Stream::request(Request settings) -> void
 
 	try
 	{
+		PaStreamParameters base_params{ 0 };
+
+		base_params.hostApiSpecificStreamInfo = nullptr;
+		base_params.sampleFormat = paFloat32 | paNonInterleaved;
+
 		std::optional<PaStreamParameters> input_params;
 
 		if (settings.input_device)
 		{
-			input_params = settings.input_device->make_input_stream_parameters(settings.latency);
+			input_params = base_params;
+
+			input_params->channelCount = settings.input_device->info.maxInputChannels;
+			input_params->device = settings.input_device->index;
+			input_params->suggestedLatency = settings.input_device->info.defaultLowInputLatency;
 		}
 
-		const auto output_params { settings.output_device.make_output_stream_parameters(settings.latency) };
+		auto output_params{ base_params };
+
+		output_params.channelCount = 2;
+		output_params.device = settings.output_device.index;
+		output_params.suggestedLatency = settings.output_device.info.defaultLowOutputLatency;
 
 		const auto input_params_ptr { input_params ? &(*input_params) : nullptr };
 		const auto output_params_ptr { &output_params };
@@ -232,7 +244,6 @@ inline auto Stream::request(Request settings) -> void
 			settings.output_device,
 			settings.frames_per_buffer,
 			settings.SR,
-			settings.latency
 		};
 
 		requested_info_.emplace(std::move(requested_info));
