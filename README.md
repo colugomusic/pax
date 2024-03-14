@@ -1,3 +1,5 @@
+**this is deprecated in favor of [bhas](https://github.com/colugomusic/bhas) but i will keep this here as a historical artefact.**
+
 # pax
 
 It's a c++ PortAudio wrapper. I use this in Blockhead.
